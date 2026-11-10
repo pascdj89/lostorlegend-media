@@ -71,6 +71,15 @@ def yt_tease(reel):
     return kuerzen(reel["fragen"][0]["frage"], 48)
 
 
+IG_CHALLENGE = "Can you get 10/10?"
+IG_ERSTE_ZEILE_MAX = 125
+
+
+def ig_erste_zeile(reel):
+    """Erste Zeile der Instagram-Bildunterschrift: Herausforderung + Aufhaenger."""
+    return "%s %s 🌍" % (IG_CHALLENGE, yt_tease(reel))
+
+
 def texte(reel, stufe):
     erste = reel["fragen"][0]["frage"]
     kern = "10 geography questions. 5 seconds each. No pausing."
@@ -96,13 +105,18 @@ def texte(reel, stufe):
     ])
 
     ig_tags = marke.hashtags(stufe, instagram=True)
-    # Instagram zeigt nur die ersten ~125 Zeichen der Bildunterschrift: der
-    # Aufhaenger (derselbe wie im YouTube-Titel) steht deshalb ganz oben.
+    # Instagram zeigt nur die ersten ~125 Zeichen der Bildunterschrift. Seit
+    # 10.11.2026 beginnt die erste Zeile mit der Mitspiel-Herausforderung,
+    # dann der Aufhaenger (derselbe wie im YouTube-Titel). Grund: die starken
+    # Geografie-Quiz-Reels (vidIQ-Ausreisser, Aug-Nov 2026) oeffnen mit
+    # „Can you…" / „How many did you get…", keiner mit „QUIZ". Der HOOK-Satz
+    # („Only real map readers get 10 out of 10.") faellt hier weg, er
+    # wiederholte nur die Herausforderung; gesprochen bleibt er im Reel.
     ig_text = "\n".join([
-        "%s 🌍" % yt_tease(reel),
-        "%s level. %s" % (stufe, marke.HOOK),
-        kern,
-        "How many did you get?",
+        ig_erste_zeile(reel),
+        "%s level. 10 geography questions, 5 seconds each, no pausing." % stufe,
+        "Score %s or better and you're a LEGEND." % _schwelle(stufe),
+        "Drop your score in the comments 👇",
         "",
         " ".join(ig_tags),
     ])
@@ -133,6 +147,13 @@ def pruefen(t):
         if n_ig > marke.IG_MAX_HASHTAGS:
             fehler.append("Instagram: %d Hashtags, erlaubt sind %d"
                           % (n_ig, marke.IG_MAX_HASHTAGS))
+        erste = t["instagram"]["text"].split("\n", 1)[0]
+        if not erste.startswith(IG_CHALLENGE):
+            fehler.append("Instagram: erste Zeile beginnt nicht mit der "
+                          "Herausforderung (%r)" % IG_CHALLENGE)
+        if len(erste) > IG_ERSTE_ZEILE_MAX:
+            fehler.append("Instagram: erste Zeile %d Zeichen — sichtbar sind nur "
+                          "rund %d" % (len(erste), IG_ERSTE_ZEILE_MAX))
     if "tiktok" in t and not t["tiktok"]["titel"].strip():
         fehler.append("TikTok: Titel fehlt — die API lehnt den Beitrag sonst ab")
     if "youtube" in t:
